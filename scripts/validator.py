@@ -52,6 +52,8 @@ def run_quality_firewall(input_path="data/raw/sales_data.csv"):
         print("ACTION: Data is CLEAN. Ready to load into Data Warehouse.")
     else:
         print("ACTION: Data is DIRTY. Sending to Quarantine and Alerting Data Engineer!")
+    
+    return all_passed
 
 if __name__ == "__main__":
     run_quality_firewall()

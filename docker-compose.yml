@@ -1,28 +1,5 @@
-version: '3.8'
-# Common Airflow Configuration Ancho
-x-airflow-common:
-  &airflow-common
-  image: apache/airflow:2.8.1
-  environment:
-    # Set executor to LocalExecutor for single-node performance
-    - AIRFLOW__CORE__EXECUTOR=LocalExecutor
-    # Connect to the PostgreSQL database service
-    - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
-    # Do not load default Airflow examples to keep the UI clean
-    - AIRFLOW__CORE__LOAD_EXAMPLES=False
-    # Load Discord webhook URL from the .env file
-    - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL}
-  volumes:
-    # Mount local directories to the containers
-    - ./dags:/opt/airflow/dags
-    - ./scripts:/opt/airflow/scripts
-    - ./data:/opt/airflow/data
-  depends_on:
-    postgres:
-      condition: service_healthy
-
 services:
-  # Database Service (Data Warehouse & Metadata)
+  # 1. ฐานข้อมูล PostgreSQL
   postgres:
     image: postgres:13
     environment:
@@ -30,40 +7,72 @@ services:
       - POSTGRES_PASSWORD=airflow
       - POSTGRES_DB=airflow
     ports:
-      # Map container port to local machine port
       - "5432:5432"
     healthcheck:
-      # Ensure database is ready before Airflow starts
       test: ["CMD", "pg_isready", "-U", "airflow"]
       interval: 5s
       retries: 5
 
-  # Airflow Database Initialization
+  # 2. ตัวสร้างฐานข้อมูล (Init)
   airflow-init:
-    <<: *airflow-common
-    command: version
+    image: apache/airflow:2.8.1-python3.11
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./scripts:/opt/airflow/scripts
+      - ./data:/opt/airflow/data
     environment:
-      # Automatically initialize the database and create admin user
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL}
+      - _PIP_ADDITIONAL_REQUIREMENTS=great-expectations==0.18.9 pandas==2.2.0
       - _AIRFLOW_DB_UPGRADE=true
       - _AIRFLOW_WWW_USER_CREATE=true
       - _AIRFLOW_WWW_USER_USERNAME=admin
       - _AIRFLOW_WWW_USER_PASSWORD=adminpassword
+    command: version
 
-  # Airflow Web UI Service
+  # 3. ตัวหน้าเว็บ (Webserver)
   airflow-webserver:
-    <<: *airflow-common
-    command: webserver
+    image: apache/airflow:2.8.1-python3.11
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./scripts:/opt/airflow/scripts
+      - ./data:/opt/airflow/data
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL}
+      - _PIP_ADDITIONAL_REQUIREMENTS=great-expectations==0.18.9 pandas==2.2.0
     ports:
-      # Map web UI to localhost:8080
       - "8080:8080"
-    depends_on:
-      airflow-init:
-        condition: service_completed_successfully
+    command: webserver
 
-  # Airflow Scheduler Service
+  # 4. ตัวคุมตารางเวลา (Scheduler)
   airflow-scheduler:
-    <<: *airflow-common
-    command: scheduler
+    image: apache/airflow:2.8.1-python3.11
     depends_on:
+      postgres:
+        condition: service_healthy
       airflow-init:
         condition: service_completed_successfully
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./scripts:/opt/airflow/scripts
+      - ./data:/opt/airflow/data
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL}
+      - _PIP_ADDITIONAL_REQUIREMENTS=great-expectations==0.18.9 pandas==2.2.0
+    command: scheduler
