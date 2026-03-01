@@ -1,5 +1,4 @@
 services:
-  # 1. ฐานข้อมูล PostgreSQL
   postgres:
     image: postgres:13
     environment:
@@ -13,7 +12,6 @@ services:
       interval: 5s
       retries: 5
 
-  # 2. ตัวสร้างฐานข้อมูล (Init)
   airflow-init:
     image: apache/airflow:2.8.1-python3.11
     depends_on:
@@ -28,14 +26,13 @@ services:
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
       - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL}
-      - _PIP_ADDITIONAL_REQUIREMENTS=great-expectations==0.18.9 pandas==2.2.0
+      - _PIP_ADDITIONAL_REQUIREMENTS=great-expectations==0.18.9 pandas==2.2.0 psycopg2-binary==2.9.9
       - _AIRFLOW_DB_UPGRADE=true
       - _AIRFLOW_WWW_USER_CREATE=true
       - _AIRFLOW_WWW_USER_USERNAME=admin
       - _AIRFLOW_WWW_USER_PASSWORD=adminpassword
     command: version
 
-  # 3. ตัวหน้าเว็บ (Webserver)
   airflow-webserver:
     image: apache/airflow:2.8.1-python3.11
     depends_on:
@@ -52,12 +49,12 @@ services:
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
       - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL}
-      - _PIP_ADDITIONAL_REQUIREMENTS=great-expectations==0.18.9 pandas==2.2.0
+      - _PIP_ADDITIONAL_REQUIREMENTS=great-expectations==0.18.9 pandas==2.2.0 psycopg2-binary==2.9.9
+      - DB_HOST=postgres
     ports:
-      - "8080:8080"
+      - "8085:8080"
     command: webserver
 
-  # 4. ตัวคุมตารางเวลา (Scheduler)
   airflow-scheduler:
     image: apache/airflow:2.8.1-python3.11
     depends_on:
@@ -74,5 +71,6 @@ services:
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
       - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL}
-      - _PIP_ADDITIONAL_REQUIREMENTS=great-expectations==0.18.9 pandas==2.2.0
+      - _PIP_ADDITIONAL_REQUIREMENTS=great-expectations==0.18.9 pandas==2.2.0 psycopg2-binary==2.9.9
+      - DB_HOST=postgres
     command: scheduler
