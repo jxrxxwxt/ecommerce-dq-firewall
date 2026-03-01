@@ -1,0 +1,9 @@
+# Data manipulation
+pandas==2.2.0
+numpy==1.26.4
+
+# Data Quality & Validation
+great-expectations==0.18.9
+
+# Database adapter
+psycopg2-binary==2.9.9

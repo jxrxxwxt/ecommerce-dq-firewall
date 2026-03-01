@@ -1,0 +1,15 @@
+# Environments
+.env
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Data storage (Do not commit raw/quarantine data)
+data/
+*.csv
+
+# Airflow logs
+logs/
