@@ -7,3 +7,6 @@ great-expectations==0.18.9
 
 # Database adapter
 psycopg2-binary==2.9.9
+
+streamlit
+plotly

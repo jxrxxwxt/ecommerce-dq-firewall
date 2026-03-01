@@ -74,3 +74,19 @@ services:
       - _PIP_ADDITIONAL_REQUIREMENTS=great-expectations==0.18.9 pandas==2.2.0 psycopg2-binary==2.9.9
       - DB_HOST=postgres
     command: scheduler
+    
+  streamlit-dashboard:
+    image: python:3.11-slim
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./dashboard:/app
+    working_dir: /app
+    environment:
+      - DB_HOST=postgres
+    command: >
+      bash -c "pip install streamlit pandas psycopg2-binary plotly &&
+      streamlit run app.py --server.port 8501 --server.address 0.0.0.0"
+    ports:
+      - "8501:8501"
